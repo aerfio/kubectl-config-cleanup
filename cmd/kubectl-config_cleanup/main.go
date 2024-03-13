@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"slices"
@@ -16,6 +17,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	pathOptions := clientcmd.NewDefaultPathOptions()
 	removeStaleUsers := true
 	removeStaleClusters := true
@@ -31,7 +38,7 @@ func main() {
 	}
 	cfg, err := pathOptions.GetStartingConfig()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	namedContexts := k8sConfigContexts(cfg.Contexts)
@@ -60,7 +67,7 @@ func main() {
 		fuzzyfinder.WithCursorPosition(fuzzyfinder.CursorPositionTop),
 	)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to fuzzy-search through kubeconfig: %s", err)
 	}
 
 	clustersToDelete := []string{}
@@ -85,8 +92,8 @@ func main() {
 		staleClusters := []string{}
 		allClusters := maps.Keys(cfg.Clusters)
 		referencedClusters := []string{}
-		for _, context := range cfg.Contexts {
-			referencedClusters = append(referencedClusters, context.Cluster)
+		for _, kubeCtx := range cfg.Contexts {
+			referencedClusters = append(referencedClusters, kubeCtx.Cluster)
 		}
 		for _, cluster := range allClusters {
 			if !slices.Contains(referencedClusters, cluster) {
@@ -103,8 +110,8 @@ func main() {
 		staleUsers := []string{}
 		allUsers := maps.Keys(cfg.AuthInfos)
 		referencedUsers := []string{}
-		for _, context := range cfg.Contexts {
-			referencedUsers = append(referencedUsers, context.AuthInfo)
+		for _, kubeCtx := range cfg.Contexts {
+			referencedUsers = append(referencedUsers, kubeCtx.AuthInfo)
 		}
 		for _, user := range allUsers {
 			if !slices.Contains(referencedUsers, user) {
@@ -117,9 +124,7 @@ func main() {
 		}
 	}
 
-	if err := clientcmd.ModifyConfig(pathOptions, *cfg, true); err != nil {
-		log.Fatal(err)
-	}
+	return clientcmd.ModifyConfig(pathOptions, *cfg, true)
 }
 
 type NamedAPIContext struct {
@@ -129,10 +134,10 @@ type NamedAPIContext struct {
 
 func k8sConfigContexts(ctxs map[string]*api.Context) []NamedAPIContext {
 	out := make([]NamedAPIContext, 0, len(ctxs))
-	for key, context := range ctxs {
+	for key, ctx := range ctxs {
 		out = append(out, NamedAPIContext{
 			Name:    key,
-			Context: context,
+			Context: ctx,
 		})
 	}
 	return out
