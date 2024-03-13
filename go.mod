@@ -1,4 +1,4 @@
-module aerf.io/k8s-config-cleanup
+module aerf.io/kubectl-config-cleanup
 
 go 1.22.1
 

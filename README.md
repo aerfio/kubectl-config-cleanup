@@ -8,7 +8,7 @@ and `KUBECONFIG` environment variable. By default it also removes all of the sta
 ## Installation
 
 ```bash
-go install aerf.io/cmd/kubectl-config_cleanup@main
+go install aerf.io/kubectl-config-cleanup/cmd/kubectl-config_cleanup@main
 ```
 
 ## Usage
