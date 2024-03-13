@@ -1,0 +1,6 @@
+.idea
+.vscode
+bin/
+tmp/
+/kubectl-config_cleanup
+/config
