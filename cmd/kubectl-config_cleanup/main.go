@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -67,6 +68,9 @@ func run() error {
 		fuzzyfinder.WithCursorPosition(fuzzyfinder.CursorPositionTop),
 	)
 	if err != nil {
+		if errors.Is(err, fuzzyfinder.ErrAbort) {
+			return nil
+		}
 		return fmt.Errorf("failed to fuzzy-search through kubeconfig: %s", err)
 	}
 
