@@ -8,7 +8,7 @@ import (
 	"os"
 	"slices"
 
-	"golang.org/x/exp/maps"
+	"maps"
 
 	"github.com/ktr0731/go-fuzzyfinder"
 	"github.com/spf13/pflag"
@@ -27,7 +27,7 @@ func run() error {
 	pathOptions := clientcmd.NewDefaultPathOptions()
 	removeStaleUsers := true
 	removeStaleClusters := true
-	pflag.StringVar(&pathOptions.LoadingRules.ExplicitPath, pathOptions.ExplicitFileFlag, pathOptions.LoadingRules.ExplicitPath, "Use a particular kubeconfig file")
+	pflag.StringVar(&pathOptions.LoadingRules.ExplicitPath, pathOptions.ExplicitFileFlag, pathOptions.GlobalFile, "Use a particular kubeconfig file")
 	pflag.BoolVarP(&removeStaleUsers, "remove-stale-users", "u", true, "Remove stale users, not referenced by any context")
 	pflag.BoolVarP(&removeStaleClusters, "remove-stale-clusters", "c", true, "Remove stale clusters, not referenced by any context")
 	help := pflag.BoolP("help", "h", false, "Print help message")
@@ -76,8 +76,10 @@ func run() error {
 
 	clustersToDelete := []string{}
 	usersToDelete := []string{}
+	deletedContextNames := []string{}
 	for _, i := range idxs {
 		ctx := namedContexts[i]
+		deletedContextNames = append(deletedContextNames, ctx.Name)
 		delete(cfg.Contexts, ctx.Name)
 		usersToDelete = append(usersToDelete, ctx.Context.AuthInfo)
 		clustersToDelete = append(clustersToDelete, ctx.Context.Cluster)
@@ -99,7 +101,7 @@ func run() error {
 		for _, kubeCtx := range cfg.Contexts {
 			referencedClusters = append(referencedClusters, kubeCtx.Cluster)
 		}
-		for _, cluster := range allClusters {
+		for cluster := range allClusters {
 			if !slices.Contains(referencedClusters, cluster) {
 				staleClusters = append(staleClusters, cluster)
 			}
@@ -117,7 +119,7 @@ func run() error {
 		for _, kubeCtx := range cfg.Contexts {
 			referencedUsers = append(referencedUsers, kubeCtx.AuthInfo)
 		}
-		for _, user := range allUsers {
+		for user := range allUsers {
 			if !slices.Contains(referencedUsers, user) {
 				staleUsers = append(staleUsers, user)
 			}
@@ -128,6 +130,7 @@ func run() error {
 		}
 	}
 
+	fmt.Printf("Deleted contexts: %+v\n", deletedContextNames)
 	return clientcmd.ModifyConfig(pathOptions, *cfg, true)
 }
 
